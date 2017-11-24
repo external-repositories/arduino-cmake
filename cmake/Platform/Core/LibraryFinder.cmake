@@ -4,7 +4,8 @@
 #
 # find_arduino_libraries(VAR_NAME SRCS ARDLIBS)
 #
-#      VAR_NAME - Variable name which will hold the results
+#      OUTPUT_LIB_NAMES - Variable name which will hold the list of found libraries names
+#      OUTPUT_LIB_PATHS - Variable name which will hold the list of found libraries paths
 #      SRCS     - Sources that will be analized
 #      ARDLIBS  - Arduino libraries identified by name (e.g., Wire, SPI, Servo)
 #
@@ -28,9 +29,11 @@
 #  to be part of that Arduino library.
 #
 #=============================================================================#
-function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
-    set(ARDUINO_LIBS)
+function(find_arduino_libraries OUTPUT_LIBS_NAME OUTPUT_LIBS_PATH SRCS ARDLIBS)
+    set(ARDUINO_LIBS_PATH)
+    set(ARDUINO_LIBS_NAME)
 
+    message("*** find_arduino_libraries")
     if (ARDLIBS) # Libraries are known in advance, just find their absoltue paths
 
         foreach (LIB ${ARDLIBS})
@@ -44,22 +47,25 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                     ${CMAKE_CURRENT_SOURCE_DIR}/libraries)
 
                 if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/${LIB}.h)
-                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB})
+                    list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/${LIB})
+                    list(APPEND ARDUINO_LIBS_NAME ${LIB})
                     break()
                 endif ()
                 if (EXISTS ${LIB_SEARCH_PATH}/${LIB}.h)
-                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
+                    list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH})
+                    list(APPEND ARDUINO_LIBS_NAME ${LIB})
                     break()
                 endif ()
 
                 # Some libraries like Wire and SPI require building from source
                 if (EXISTS ${LIB_SEARCH_PATH}/${LIB}/src/${LIB}.h)
-                    message(STATUS "avr library found: ${LIB}")
-                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${LIB}/src)
+                    list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/${LIB}/src)
+                    list(APPEND ARDUINO_LIBS_NAME ${LIB})
                     break()
                 endif ()
                 if (EXISTS ${LIB_SEARCH_PATH}/src/${LIB}.h)
-                    list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
+                    list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/src)
+                    list(APPEND ARDUINO_LIBS_NAME ${LIB})
                     break()
                 endif ()
 
@@ -67,6 +73,7 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
         endforeach ()
 
     else ()
+        message("*** find from souce")
 
         foreach (SRC ${SRCS})
 
@@ -99,21 +106,25 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                                 PROPERTY LINK_DIRECTORIES)
                         foreach (LIB_SEARCH_PATH ${LIBRARY_SEARCH_PATH} ${ARDUINO_LIBRARIES_PATH} ${ARDUINO_PLATFORM_LIBRARIES_PATH} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/libraries ${ARDUINO_EXTRA_LIBRARIES_PATH})
                             if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/${CMAKE_MATCH_1})
-                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
+                                list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/${INCLUDE_NAME})
+                                list(APPEND ARDUINO_LIBS_NAME ${INCLUDE_NAME})
                                 break()
                             endif ()
                             if (EXISTS ${LIB_SEARCH_PATH}/${CMAKE_MATCH_1})
-                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH})
+                                list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH})
+                                list(APPEND ARDUINO_LIBS_NAME ${CMAKE_MATCH_1})
                                 break()
                             endif ()
 
                             # Some libraries like Wire and SPI require building from source
                             if (EXISTS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src/${CMAKE_MATCH_1})
-                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
+                                list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
+                                list(APPEND ARDUINO_LIBS_NAME ${INCLUDE_NAME})
                                 break()
                             endif ()
                             if (EXISTS ${LIB_SEARCH_PATH}/src/${CMAKE_MATCH_1})
-                                list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/src)
+                                list(APPEND ARDUINO_LIBS_PATH ${LIB_SEARCH_PATH}/src)
+                                list(APPEND ARDUINO_LIBS_NAME ${CMAKE_MATCH_1})
                                 break()
                             endif ()
                         endforeach ()
@@ -126,8 +137,16 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
 
     endif ()
 
-    if (ARDUINO_LIBS)
-        list(REMOVE_DUPLICATES ARDUINO_LIBS)
+    if (ARDUINO_LIBS_PATH)
+        list(REMOVE_DUPLICATES ARDUINO_LIBS_PATH)
     endif ()
-    set(${VAR_NAME} ${ARDUINO_LIBS} PARENT_SCOPE)
+    if (ARDUINO_LIBS_NAME)
+        list(REMOVE_DUPLICATES ARDUINO_LIBS_NAME)
+    endif()
+
+    message("*** names: ${ARDUINO_LIBS_NAME}")
+    message("*** paths: ${ARDUINO_LIBS_PATH}")
+
+    set(${OUTPUT_LIBS_PATH} ${ARDUINO_LIBS_PATH} PARENT_SCOPE)
+    set(${OUTPUT_LIBS_NAME} ${ARDUINO_LIBS_NAME} PARENT_SCOPE)
 endfunction()
