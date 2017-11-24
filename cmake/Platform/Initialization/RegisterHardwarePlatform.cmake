@@ -5,8 +5,8 @@ set(PLATFORM_PATH ${ARDUINO_SDK_PATH}/hardware/arduino/)
 string(REGEX REPLACE "/$" "" PLATFORM_PATH ${PLATFORM_PATH})
 GET_FILENAME_COMPONENT(PLATFORM ${PLATFORM_PATH} NAME)
 
-# platform path changed in versions 1.5 and greater
-if (ARDUINO_SDK_VERSION VERSION_GREATER 1.0.5)
+# platform path changed in versions 1.5.x and greater
+if (ARDUINO_SDK_VERSION VERSION_GREATER 1.5.0)
     set(PLATFORM_PATH "${PLATFORM_PATH}/avr")
 endif ()
 

@@ -2,13 +2,12 @@
 # make_arduino_library
 # [PRIVATE/INTERNAL]
 #
-# make_arduino_library(VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
+# make_arduino_library(VAR_NAME BOARD_ID LIB_PATH INCLUDE_PATHS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
 #        BOARD_ID    - Board ID
 #        LIB_PATH    - Path of the library
-#        COMPILE_FLAGS - Compile flags
-#        LINK_FLAGS    - Link flags
+#        INCLUDE_PATHS - list of include paths
 #
 # Creates an Arduino library, with all it's library dependencies.
 #
@@ -16,7 +15,7 @@
 #      when looking for source files.
 #
 #=============================================================================#
-function(make_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAGS)
+function(make_arduino_library VAR_NAME BOARD_ID LIB_PATH INCLUDE_PATHS)
 
     string(REGEX REPLACE "/src/?$" "" LIB_PATH_STRIPPED ${LIB_PATH})
     get_filename_component(LIB_NAME ${LIB_PATH_STRIPPED} NAME)
@@ -36,13 +35,10 @@ function(make_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAG
             arduino_debug_msg("Generating Arduino ${LIB_NAME} library")
             add_library(${TARGET_LIB_NAME} STATIC ${LIB_SRCS})
 
-            set_board_flags(ARDUINO_COMPILE_FLAGS ARDUINO_LINK_FLAGS ${BOARD_ID} FALSE)
-
             find_arduino_libraries(LIB_DEPS "${LIB_SRCS}" "")
 
             foreach (LIB_DEP ${LIB_DEPS})
-                make_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP}
-                        "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+                make_arduino_library(DEP_LIB_SRCS ${BOARD_ID} ${LIB_DEP} "${INCLUDE_PATHS}")
                 list(APPEND LIB_TARGETS ${DEP_LIB_SRCS})
                 list(APPEND LIB_INCLUDES ${DEP_LIB_SRCS_INCLUDES})
             endforeach ()
@@ -50,16 +46,14 @@ function(make_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAG
             if (LIB_INCLUDES)
                 string(REPLACE ";" " " LIB_INCLUDES "${LIB_INCLUDES}")
             endif ()
-
-            set_target_properties(${TARGET_LIB_NAME} PROPERTIES
-                    COMPILE_FLAGS "${ARDUINO_COMPILE_FLAGS} ${LIB_INCLUDES} -I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\" ${COMPILE_FLAGS}"
-                    LINK_FLAGS "${ARDUINO_LINK_FLAGS} ${LINK_FLAGS}")
-            list(APPEND LIB_INCLUDES "-I\"${LIB_PATH}\" -I\"${LIB_PATH}/utility\"")
-
+            list(APPEND INCLUDE_PATHS ${LIB_INCLUDES})
             if (LIB_TARGETS)
                 list(REMOVE_ITEM LIB_TARGETS ${TARGET_LIB_NAME})
             endif ()
-            target_link_libraries(${TARGET_LIB_NAME} ${BOARD_ID}_CORE ${LIB_TARGETS})
+
+            _set_board_compile_flags(${TARGET_LIB_NAME} ${BOARD_ID} "${INCLUDE_PATHS}" FALSE)
+            _set_board_link_flags(${TARGET_LIB_NAME} ${BOARD_ID} ${BOARD_ID}_CORE ${LIB_TARGETS})
+
             list(APPEND LIB_TARGETS ${TARGET_LIB_NAME})
 
         endif ()
@@ -72,32 +66,44 @@ function(make_arduino_library VAR_NAME BOARD_ID LIB_PATH COMPILE_FLAGS LINK_FLAG
     endif ()
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
     set(${VAR_NAME}_INCLUDES ${LIB_INCLUDES} PARENT_SCOPE)
+
+    message("***3 find libraries: ${LIB_TARGETS}")
+    message("***3 find includes: ${LIB_INCLUDES}")
+
 endfunction()
 
 #=============================================================================#
 # make_arduino_libraries
 # [PRIVATE/INTERNAL]
 #
-# make_arduino_libraries(VAR_NAME BOARD_ID SRCS COMPILE_FLAGS LINK_FLAGS)
+# make_arduino_libraries(VAR_NAME BOARD_ID ARDLIBS INCLUDE_PATHS)
 #
 #        VAR_NAME    - Vairable wich will hold the generated library names
 #        BOARD_ID    - Board ID
-#        SRCS        - source files
-#        COMPILE_FLAGS - Compile flags
-#        LINK_FLAGS    - Linker flags
+#        ARDLIBS - list of libraries
+#        INCLUDE_PATHS - list of include paths
 #
 # Finds and creates all dependency libraries based on sources.
 #
 #=============================================================================#
-function(make_arduino_libraries VAR_NAME BOARD_ID SRCS ARDLIBS COMPILE_FLAGS LINK_FLAGS)
+function(make_arduino_libraries VAR_NAME BOARD_ID ARDLIBS INCLUDE_PATHS)
     foreach (TARGET_LIB ${ARDLIBS})
         # Create static library instead of returning sources
-        make_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB}
-                "${COMPILE_FLAGS}" "${LINK_FLAGS}")
+        make_arduino_library(LIB_DEPS ${BOARD_ID} ${TARGET_LIB} "${INCLUDE_PATHS}")
+
+        message("***2 find libraries: ${LIB_DEPS}")
+        message("***2 find includes: ${${LIB_DEPS}_INCLUDES}")
+
+
         list(APPEND LIB_TARGETS ${LIB_DEPS})
-        list(APPEND LIB_INCLUDES ${LIB_DEPS_INCLUDES})
+        list(APPEND LIB_INCLUDES ${${LIB_DEPS}_INCLUDES})
     endforeach ()
 
+
     set(${VAR_NAME} ${LIB_TARGETS} PARENT_SCOPE)
-    set(${VAR_NAME}_INCLUDES ${LIB_INCLUDES} PARENT_SCOPE)
+
+    message("***1 find libraries: ${LIB_TARGETS}")
+    message("***1 find includes: ${LIB_INCLUDES}")
+
+
 endfunction()

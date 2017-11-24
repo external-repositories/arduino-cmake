@@ -32,7 +32,7 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
 
     set(ALL_LIBS)
     set(ALL_SRCS ${INPUT_SRCS} ${INPUT_HDRS})
-    set(LIB_DEP_INCLUDES)
+    set(SKETCH_INCLUDES)
 
     if (NOT INPUT_MANUAL)
         make_core_library(CORE_LIB ${BOARD_ID})
@@ -42,32 +42,26 @@ function(GENERATE_ARDUINO_FIRMWARE INPUT_NAME)
         get_filename_component(INPUT_SKETCH "${INPUT_SKETCH}" ABSOLUTE)
         make_arduino_sketch(${INPUT_NAME} ${INPUT_SKETCH} ALL_SRCS)
         if (IS_DIRECTORY "${INPUT_SKETCH}")
-            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${INPUT_SKETCH}\"")
+            set(SKETCH_INCLUDES "${SKETCH_INCLUDES} \"${INPUT_SKETCH}\"")
         else ()
             get_filename_component(INPUT_SKETCH_PATH "${INPUT_SKETCH}" PATH)
-            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${INPUT_SKETCH_PATH}\"")
+            set(SKETCH_INCLUDES "${SKETCH_INCLUDES} \"${INPUT_SKETCH_PATH}\"")
         endif ()
     endif ()
 
     VALIDATE_VARIABLES_NOT_EMPTY(VARS ALL_SRCS MSG "must define SRCS or SKETCH for target ${INPUT_NAME}")
 
-    find_arduino_libraries(TARGET_LIBS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
-    foreach (LIB_DEP ${TARGET_LIBS})
-        arduino_debug_msg("Arduino Library: ${LIB_DEP}")
-        set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} -I\"${LIB_DEP}\"")
-    endforeach ()
+    find_arduino_libraries(ARDUINO_INCLUDE_PATHS "${ALL_SRCS}" "${INPUT_ARDLIBS}")
+
+    list(APPEND ARDUINO_INCLUDE_PATHS ${SKETCH_INCLUDES})
 
     if (NOT INPUT_NO_AUTOLIBS)
-        make_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ALL_SRCS}" "${TARGET_LIBS}" "${LIB_DEP_INCLUDES}" "")
-        foreach (LIB_INCLUDES ${ALL_LIBS_INCLUDES})
-            arduino_debug_msg("Arduino Library Includes: ${LIB_INCLUDES}")
-            set(LIB_DEP_INCLUDES "${LIB_DEP_INCLUDES} ${LIB_INCLUDES}")
-        endforeach ()
+        make_arduino_libraries(ALL_LIBS ${BOARD_ID} "${ARDUINO_INCLUDE_PATHS}" "${ARDUINO_INCLUDE_PATHS}")
     endif ()
 
     list(APPEND ALL_LIBS ${CORE_LIB} ${INPUT_LIBS})
 
-    create_arduino_firmware_target(${INPUT_NAME} ${BOARD_ID} "${ALL_SRCS}" "${ALL_LIBS}" "${LIB_DEP_INCLUDES}" "" "${INPUT_MANUAL}")
+    create_arduino_firmware_target(${INPUT_NAME} ${BOARD_ID} "${ALL_SRCS}" "${ALL_LIBS}" "${ARDUINO_INCLUDE_PATHS}" "${INPUT_MANUAL}")
 
     if (INPUT_PORT)
         create_arduino_upload_target(${BOARD_ID} ${INPUT_NAME} ${INPUT_PORT} "${INPUT_PROGRAMMER}" "${INPUT_AFLAGS}")
