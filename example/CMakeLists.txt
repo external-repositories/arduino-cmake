@@ -122,7 +122,7 @@ generate_arduino_firmware(blink
 GENERATE_ARDUINO_FIRMWARE(serial_lib
         SRCS serial.cpp
         ARDLIBS SoftwareSerial
-        BOARD uno)
+        BOARD leonardo)
 
 # Alternative: by variables
 #set(blink_SRCS serial.cpp)
