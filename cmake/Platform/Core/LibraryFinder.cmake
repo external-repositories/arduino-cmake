@@ -110,7 +110,6 @@ function(find_arduino_libraries VAR_NAME SRCS ARDLIBS)
                                 list(APPEND ARDUINO_LIBS ${LIB_SEARCH_PATH}/${INCLUDE_NAME}/src)
                                 break()
                             endif ()
-
                         endforeach ()
 
                     endif ()

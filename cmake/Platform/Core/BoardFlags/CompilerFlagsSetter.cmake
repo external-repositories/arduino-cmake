@@ -84,13 +84,16 @@ function(_get_board_compile_defines DEFINES BOARD_ID)
     _get_arduino_version_define(ARDUINO_VERSION_DEFINE)
     _get_board_property(${BOARD_ID} build.f_cpu FCPU)
     _get_board_property(${BOARD_ID} build.board BOARD_NAME)
+    _get_board_property(${BOARD_ID} build.core BOARD_CORE)
 
     set(FLAGS)
     list(APPEND FLAGS F_CPU=${FCPU})
     list(APPEND FLAGS ARDUINO=${ARDUINO_VERSION_DEFINE})
     list(APPEND FLAGS ARDUINO_${BOARD_NAME})
-    #this is always the equals AVR, need some way to change this for non AVR boards
-    list(APPEND FLAGS ARDUINO_ARCH_AVR)
+
+    #get core architecture
+    set(ARCHITECTURE ${${BOARD_CORE}.arch})
+    list(APPEND FLAGS ARDUINO_ARCH_${ARCHITECTURE})
 
     _try_get_board_property(${BOARD_ID} build.vid VID)
     _try_get_board_property(${BOARD_ID} build.pid PID)
