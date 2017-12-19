@@ -117,6 +117,19 @@ generate_arduino_firmware(blink
 #generate_arduino_firmware(blink)
 
 #====================================================================#
+# Overrides USB properties for leonardo board
+# MUST OVERRIDE BEFORE USING BOARD
+#====================================================================#
+OVERRIDE_USB_PROPERTIES(
+        BOARD leonardo
+        VID 0x1234
+        PID 0x4567
+        PRODUCT "Tamagotchi Pet"
+        MANUFACTURER "My Board Factory"
+        FORCE #this will force to create properties if not exists
+)
+
+#====================================================================#
 # Avr library linkage without copying lib to local directory
 #====================================================================#
 
@@ -131,15 +144,3 @@ GENERATE_ARDUINO_FIRMWARE(serial_lib
 #set(blink_BOARD uno)
 #
 #generate_arduino_firmware(blink)
-
-#====================================================================#
-# Overrides USB properties for leonardo board
-#====================================================================#
-OVERRIDE_USB_PROPERTIES(
-        BOARD leonardo
-        VID 0x1234
-        PID 0x4567
-        PRODUCT "Tamagotchi Pet"
-        MANUFACTURER "My Board Factory"
-        FORCE #this will force to create properties if not exists
-)
